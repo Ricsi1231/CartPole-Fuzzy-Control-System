@@ -1,0 +1,4 @@
+numpy
+scikit-fuzzy
+matplotlib
+gymnasium[classic-control]
