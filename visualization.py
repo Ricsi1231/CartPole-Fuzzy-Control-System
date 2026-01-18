@@ -36,8 +36,9 @@ def plot_membership_functions(controller):
     ax1.set_title('Pole Angle', fontsize=11, fontweight='bold')
     ax1.legend(loc='upper right', fontsize=8)
     ax1.set_ylim(-0.05, 1.1)
-    ax1.set_xlim(angle.universe.min(), angle.universe.max())
+    ax1.set_xlim(-0.15, 0.15)  # Zoom to show membership function detail
     ax1.axhline(y=0, color='black', linewidth=0.5)
+    ax1.axvline(x=0, color='black', linewidth=0.5, linestyle='--')
     ax1.grid(True, alpha=0.3)
 
     ax2 = axes[0, 1]
@@ -83,6 +84,7 @@ def plot_membership_functions(controller):
     ax4.set_ylim(-0.05, 1.1)
     ax4.set_xlim(cart_velocity.universe.min(), cart_velocity.universe.max())
     ax4.axhline(y=0, color='black', linewidth=0.5)
+    ax4.axvline(x=0, color='black', linewidth=0.5, linestyle='--')
     ax4.grid(True, alpha=0.3)
 
     ax5 = axes[2, 0]

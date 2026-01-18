@@ -39,30 +39,44 @@ class FuzzyCartPoleController:
         self.position_integral = 0.0
         self.integral_gain = INTEGRAL_GAIN
         self.integral_limit = INTEGRAL_LIMIT
+
+        # =====================================================================
+        # Define Fuzzy Variables (Antecedents = inputs, Consequent = output)
+        # Each variable has a universe of discourse (range of possible values)
+        # =====================================================================
         self.angle = ctrl.Antecedent(np.arange(ANGLE_ERROR_RANGE_MIN, ANGLE_ERROR_RANGE_MAX, ANGLE_STEP), 'angle')
         self.angular_velocity = ctrl.Antecedent(np.arange(DELTA_ANGLE_RANGE_MIN, DELTA_ANGLE_RANGE_MAX, DELTA_ANGLE_STEP), 'angular_velocity')
         self.cart_position = ctrl.Antecedent(np.arange(CART_POSITION_RANGE_MIN, CART_POSITION_RANGE_MAX, CART_POSITION_STEP), 'cart_position')
         self.cart_velocity = ctrl.Antecedent(np.arange(CART_VELOCITY_RANGE_MIN, CART_VELOCITY_RANGE_MAX, CART_VELOCITY_STEP), 'cart_velocity')
         self.force = ctrl.Consequent(np.arange(CONTROL_RANGE_MIN, CONTROL_RANGE_MAX, CONTROL_STEP), 'force')
 
+        # =====================================================================
+        # Define Membership Functions for Pole Angle
+        # NL=Negative Large, NS=Negative Small, Z=Zero, PS=Positive Small, PL=Positive Large
+        # trapmf = trapezoidal (for extreme values), trimf = triangular (for middle values)
+        # =====================================================================
         self.angle['NL'] = fuzz.trapmf(self.angle.universe, ANGLE_NL)
         self.angle['NS'] = fuzz.trimf(self.angle.universe, ANGLE_NS)
         self.angle['Z'] = fuzz.trimf(self.angle.universe, ANGLE_Z)
         self.angle['PS'] = fuzz.trimf(self.angle.universe, ANGLE_PS)
         self.angle['PL'] = fuzz.trapmf(self.angle.universe, ANGLE_PL)
 
+        # Membership Functions for Angular Velocity: N=Negative, Z=Zero, P=Positive
         self.angular_velocity['N'] = fuzz.trapmf(self.angular_velocity.universe, ANG_VEL_N)
         self.angular_velocity['Z'] = fuzz.trimf(self.angular_velocity.universe, ANG_VEL_Z)
         self.angular_velocity['P'] = fuzz.trapmf(self.angular_velocity.universe, ANG_VEL_P)
 
+        # Membership Functions for Cart Position: N=Left, Z=Center, P=Right
         self.cart_position['N'] = fuzz.trapmf(self.cart_position.universe, CART_POS_N)
         self.cart_position['Z'] = fuzz.trimf(self.cart_position.universe, CART_POS_Z)
         self.cart_position['P'] = fuzz.trapmf(self.cart_position.universe, CART_POS_P)
 
+        # Membership Functions for Cart Velocity: N=Moving Left, Z=Stationary, P=Moving Right
         self.cart_velocity['N'] = fuzz.trapmf(self.cart_velocity.universe, CART_VEL_N)
         self.cart_velocity['Z'] = fuzz.trimf(self.cart_velocity.universe, CART_VEL_Z)
         self.cart_velocity['P'] = fuzz.trapmf(self.cart_velocity.universe, CART_VEL_P)
 
+        # Membership Functions for Output Force: NL=Strong Left, NS=Weak Left, Z=None, PS=Weak Right, PL=Strong Right
         self.force['NL'] = fuzz.trapmf(self.force.universe, FORCE_NL)
         self.force['NS'] = fuzz.trimf(self.force.universe, FORCE_NS)
         self.force['Z'] = fuzz.trimf(self.force.universe, FORCE_Z)
@@ -71,6 +85,12 @@ class FuzzyCartPoleController:
 
         rules = []
 
+        # =====================================================================
+        # Cart Centering Rules
+        # These rules push the cart back toward the center position.
+        # When cart is left (N), apply positive force (push right).
+        # When cart is right (P), apply negative force (push left).
+        # =====================================================================
         rules.append(ctrl.Rule(self.cart_position['N'] & self.cart_velocity['N'], self.force['PL']))
         rules.append(ctrl.Rule(self.cart_position['N'] & self.cart_velocity['Z'], self.force['PL']))
         rules.append(ctrl.Rule(self.cart_position['N'] & self.cart_velocity['P'], self.force['PS']))
@@ -78,21 +98,33 @@ class FuzzyCartPoleController:
         rules.append(ctrl.Rule(self.cart_position['P'] & self.cart_velocity['Z'], self.force['NL']))
         rules.append(ctrl.Rule(self.cart_position['P'] & self.cart_velocity['N'], self.force['NS']))
 
+        # =====================================================================
+        # Pole Balancing Rules
+        # These rules stabilize the pole based on angle and angular velocity.
+        # Positive angle = pole tilted right, Negative angle = pole tilted left.
+        # The force is applied to counteract the pole's tilt and rotation.
+        # =====================================================================
+
+        # Large Positive Angle (PL): Pole is falling right - push right aggressively
         rules.append(ctrl.Rule(self.angle['PL'] & (self.angular_velocity['P'] | self.angular_velocity['Z']), self.force['PL']))
         rules.append(ctrl.Rule(self.angle['PL'] & self.angular_velocity['N'], self.force['PS']))
 
+        # Small Positive Angle (PS): Pole is slightly tilted right
         rules.append(ctrl.Rule(self.angle['PS'] & self.angular_velocity['P'], self.force['PL']))
         rules.append(ctrl.Rule(self.angle['PS'] & self.angular_velocity['Z'], self.force['PS']))
         rules.append(ctrl.Rule(self.angle['PS'] & self.angular_velocity['N'], self.force['Z']))
 
+        # Zero Angle (Z): Pole is nearly vertical - fine adjustments based on velocity
         rules.append(ctrl.Rule(self.angle['Z'] & self.angular_velocity['P'], self.force['PS']))
         rules.append(ctrl.Rule(self.angle['Z'] & self.angular_velocity['Z'], self.force['Z']))
         rules.append(ctrl.Rule(self.angle['Z'] & self.angular_velocity['N'], self.force['NS']))
 
+        # Small Negative Angle (NS): Pole is slightly tilted left
         rules.append(ctrl.Rule(self.angle['NS'] & self.angular_velocity['P'], self.force['Z']))
         rules.append(ctrl.Rule(self.angle['NS'] & self.angular_velocity['Z'], self.force['NS']))
         rules.append(ctrl.Rule(self.angle['NS'] & self.angular_velocity['N'], self.force['NL']))
 
+        # Large Negative Angle (NL): Pole is falling left - push left aggressively
         rules.append(ctrl.Rule(self.angle['NL'] & self.angular_velocity['P'], self.force['NS']))
         rules.append(ctrl.Rule(self.angle['NL'] & (self.angular_velocity['Z'] | self.angular_velocity['N']), self.force['NL']))
 
@@ -140,22 +172,33 @@ class FuzzyCartPoleController:
         Returns:
             float: Control force clipped to [-10, 10] Newtons
         """
+        # Step 1: Extract state variables from observation array
         cart_position = observation[OBS_CART_POS]
         cart_velocity = observation[OBS_CART_VEL]
         pole_angle = observation[OBS_POLE_ANGLE]
         pole_angular_velocity = observation[OBS_POLE_VEL]
 
+        # Step 2: Compute the primary control force using fuzzy inference
+        # The fuzzy system evaluates all rules and defuzzifies to get a crisp force value
         fuzzy_force = self.compute_control(pole_angle, pole_angular_velocity, cart_position, cart_velocity)
 
+        # Step 3: Apply integral control for position drift correction
+        # Only accumulate integral when pole is nearly vertical (stable enough to correct position)
         angle_magnitude = abs(pole_angle)
         if angle_magnitude < INTEGRAL_ANGLE_THRESHOLD:
+            # Accumulate position error over time (integral term)
             self.position_integral += cart_position * DT
+            # Anti-windup: limit integral to prevent excessive buildup
             self.position_integral = np.clip(self.position_integral, -self.integral_limit, self.integral_limit)
+            # Negative gain: if cart is right (+), push left (-) to center it
             integral_force = -self.integral_gain * self.position_integral
         else:
+            # Pole is unstable - prioritize balancing over centering
             integral_force = 0.0
+            # Decay the integral to prevent sudden jumps when pole stabilizes
             self.position_integral *= INTEGRAL_DECAY
 
+        # Step 4: Combine fuzzy and integral forces, then clip to actuator limits
         total_force = fuzzy_force + integral_force
         clipped_force = np.clip(total_force, CONTROL_RANGE_MIN, CONTROL_RANGE_MAX)
 

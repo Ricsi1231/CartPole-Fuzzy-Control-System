@@ -13,7 +13,9 @@ from cartpole_parameters import (MAX_SIMULATION_STEPS, NUM_EPISODES, DISPLAY_INT
                                   INIT_CART_POS_MIN, INIT_CART_POS_MAX,
                                   INIT_CART_VEL_MIN, INIT_CART_VEL_MAX,
                                   INIT_POLE_ANGLE_MIN, INIT_POLE_ANGLE_MAX,
-                                  INIT_POLE_VEL_MIN, INIT_POLE_VEL_MAX)
+                                  INIT_POLE_VEL_MIN, INIT_POLE_VEL_MAX,
+                                  OBS_CART_POS, OBS_CART_VEL, OBS_POLE_ANGLE, OBS_POLE_VEL,
+                                  DT, SEPARATOR_WIDTH)
 
 
 def simulate_cartpole_fuzzy(controller, episode_num, render=True):
@@ -44,9 +46,9 @@ def simulate_cartpole_fuzzy(controller, episode_num, render=True):
     observation = np.array(env.state, dtype=np.float32)
 
     time_steps = [0.0]
-    angles = [observation[2]]
-    angular_velocities = [observation[3]]
-    cart_positions = [observation[0]]
+    angles = [observation[OBS_POLE_ANGLE]]
+    angular_velocities = [observation[OBS_POLE_VEL]]
+    cart_positions = [observation[OBS_CART_POS]]
     actions = [0]
     rewards = [0.0]
 
@@ -55,8 +57,8 @@ def simulate_cartpole_fuzzy(controller, episode_num, render=True):
 
     print(f"\nStarting CartPole simulation (Episode {episode_num}):")
     print(f"Controller: Fuzzy Logic")
-    print(f"Initial pole angle: {np.degrees(observation[2]):.2f} degrees")
-    print(f"Initial angular velocity: {observation[3]:.2f} rad/s")
+    print(f"Initial pole angle: {np.degrees(observation[OBS_POLE_ANGLE]):.2f} degrees")
+    print(f"Initial angular velocity: {observation[OBS_POLE_VEL]:.2f} rad/s")
     print(f"Max steps: {MAX_SIMULATION_STEPS}\n")
 
     while step < MAX_SIMULATION_STEPS:
@@ -66,17 +68,17 @@ def simulate_cartpole_fuzzy(controller, episode_num, render=True):
         step += 1
         total_reward += reward
 
-        time_steps.append(step * 0.02)
-        angles.append(observation[2])
-        angular_velocities.append(observation[3])
-        cart_positions.append(observation[0])
+        time_steps.append(step * DT)
+        angles.append(observation[OBS_POLE_ANGLE])
+        angular_velocities.append(observation[OBS_POLE_VEL])
+        cart_positions.append(observation[OBS_CART_POS])
         actions.append(action)
         rewards.append(reward)
 
         if step % DISPLAY_INTERVAL == 0:
-            print(f"Step {step}: Angle={np.degrees(observation[2]):.2f}deg, "
-                  f"AngVel={observation[3]:.2f}rad/s, "
-                  f"CartPos={observation[0]:.2f}m, Force={action:.2f}")
+            print(f"Step {step}: Angle={np.degrees(observation[OBS_POLE_ANGLE]):.2f}deg, "
+                  f"AngVel={observation[OBS_POLE_VEL]:.2f}rad/s, "
+                  f"CartPos={observation[OBS_CART_POS]:.2f}m, Force={action:.2f}")
 
         if terminated or truncated:
             if terminated:
@@ -86,8 +88,8 @@ def simulate_cartpole_fuzzy(controller, episode_num, render=True):
             break
 
     print(f"Total reward: {total_reward}")
-    print(f"Final pole angle: {np.degrees(observation[2]):.2f} degrees")
-    print(f"Final cart position: {observation[0]:.2f} m")
+    print(f"Final pole angle: {np.degrees(observation[OBS_POLE_ANGLE]):.2f} degrees")
+    print(f"Final cart position: {observation[OBS_CART_POS]:.2f} m")
 
     env.close()
 
@@ -103,20 +105,20 @@ def main():
     if len(sys.argv) > 1:
         show_plots = sys.argv[1].lower() != 'false'
 
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH)
     print("CartPole Fuzzy Logic Controller")
     print("Real-time Simulation")
     print("Press Ctrl+C to stop")
-    print("=" * 60)
+    print("=" * SEPARATOR_WIDTH)
 
     controller = FuzzyCartPoleController()
 
     if show_plots:
         print("\nDisplaying membership functions...")
-        # plot_membership_functions(controller)
+        plot_membership_functions(controller)
 
         print("\nDisplaying control surface...")
-        # plot_control_surface(controller)
+        plot_control_surface(controller)
 
     episode_rewards = []
     episode_steps = []
@@ -125,9 +127,9 @@ def main():
     try:
         while True:
             episode += 1
-            print(f"\n{'='*60}")
+            print(f"\n{'=' * SEPARATOR_WIDTH}")
             print(f"Episode {episode}")
-            print("=" * 60)
+            print("=" * SEPARATOR_WIDTH)
 
             time_steps, angles, angular_velocities, cart_positions, actions, rewards, total_reward, steps = simulate_cartpole_fuzzy(
                 controller, episode, render=True
@@ -142,14 +144,14 @@ def main():
         print("\n\nSimulation stopped by user.")
 
     if len(episode_steps) > 0:
-        print("\n" + "=" * 60)
+        print("\n" + "=" * SEPARATOR_WIDTH)
         print("Simulation Summary")
-        print("=" * 60)
+        print("=" * SEPARATOR_WIDTH)
         print(f"Total episodes: {len(episode_steps)}")
         print(f"Average steps: {np.mean(episode_steps):.1f}")
         print(f"Average reward: {np.mean(episode_rewards):.1f}")
         print(f"Best episode: {np.argmax(episode_steps) + 1} with {np.max(episode_steps)} steps")
-        print("=" * 60)
+        print("=" * SEPARATOR_WIDTH)
 
 
 if __name__ == "__main__":
