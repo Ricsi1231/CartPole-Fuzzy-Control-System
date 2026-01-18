@@ -1,137 +1,91 @@
 """
 Configuration Parameters for CartPole Fuzzy Controller
-
-This module centralizes all tunable parameters for the CartPole simulation
-and fuzzy controller. Modifying these values affects controller behavior.
-
-PARAMETER CATEGORIES
---------------------
-1. Simulation Control: Timing and episode limits
-2. CartPole Physical Limits: Environment boundaries from Gymnasium
-3. Fuzzy Input Ranges: Universe of discourse for each fuzzy variable
-4. Convergence Thresholds: Criteria for "balanced" state
-5. Display Settings: Console output frequency
-
-USAGE
------
-Import specific parameters:
-    from cartpole_parameters import MAX_SIMULATION_STEPS, DT
-
-Or import all:
-    from cartpole_parameters import *
-
-MODIFICATION GUIDELINES
------------------------
-- Changing fuzzy input ranges requires corresponding changes in fuzzy_controller.py
-- Simulation parameters can be modified independently
-- Physical limits should match Gymnasium's CartPole if using standard environment
 """
 
-# =============================================================================
-# SIMULATION CONTROL PARAMETERS
-# =============================================================================
-# These control how the simulation runs, independent of the physics or controller.
+# Observation Array Indices
+OBS_CART_POS = 0
+OBS_CART_VEL = 1
+OBS_POLE_ANGLE = 2
+OBS_POLE_VEL = 3
 
-# Time step for simulation display and data logging (seconds)
-# Matches Gymnasium's CartPole internal time step (tau = 0.02)
-# 50 Hz update rate = 20ms per step
 DT = 0.02
-
-# Maximum steps per episode before forced termination
-# At 50 Hz, 1000 steps = 20 seconds of simulated time
-# Longer episodes test sustained balance; shorter episodes speed up training
 MAX_SIMULATION_STEPS = 1000
-
-# Default number of episodes for batch runs
-# Used by scripts that run multiple episodes for statistics
 NUM_EPISODES = 10
 
-# =============================================================================
-# CARTPOLE PHYSICAL STATE LIMITS
-# =============================================================================
-# These match Gymnasium's CartPole environment internal limits.
-# Used for observation space bounds, NOT for fuzzy controller inputs.
-# The fuzzy controller uses separate (often narrower) ranges below.
-
-# Cart position limits (meters)
-# Gymnasium allows ±4.8m for observation space, but terminates at ±2.4m
 CART_POSITION_MIN = -4.8
 CART_POSITION_MAX = 4.8
-
-# Cart velocity limits (m/s)
-# Theoretical max based on force and physics; rarely reached in practice
 CART_VELOCITY_MIN = -10.0
 CART_VELOCITY_MAX = 10.0
-
-# Pole angle limits (radians)
-# ±0.418 rad = ±24 degrees (observation space)
-# Episode terminates at ±0.2095 rad = ±12 degrees
 POLE_ANGLE_MIN = -0.418
 POLE_ANGLE_MAX = 0.418
-
-# Pole angular velocity limits (rad/s)
-# Practical limits during normal operation
 POLE_ANGULAR_VELOCITY_MIN = -5.0
 POLE_ANGULAR_VELOCITY_MAX = 5.0
 
-# =============================================================================
-# FUZZY CONTROLLER INPUT RANGES (Universe of Discourse)
-# =============================================================================
-# These define the range of values the fuzzy controller considers.
-# Ranges are often extended beyond physical limits to provide "headroom"
-# for membership functions at extreme values.
+ANGLE_ERROR_RANGE_MIN = -1
+ANGLE_ERROR_RANGE_MAX = 1
+ANGLE_STEP = 0.01
 
-# Pole angle input range for fuzzy controller (radians)
-# Extended beyond ±0.2095 (12°) failure threshold to allow meaningful
-# membership values near the failure boundary
-# ±0.5 rad = ±28.6 degrees
-ANGLE_ERROR_RANGE_MIN = -0.5
-ANGLE_ERROR_RANGE_MAX = 0.5
-
-# Angular velocity input range for fuzzy controller (rad/s)
-# Covers typical operation range during balancing
-# Extreme velocities beyond this are clipped
 DELTA_ANGLE_RANGE_MIN = -3.0
 DELTA_ANGLE_RANGE_MAX = 3.0
+DELTA_ANGLE_STEP = 0.1
 
-# Force output range for fuzzy controller (Newtons)
-# Matches CartPole's maximum applicable force
-# Symmetric for bidirectional control
 CONTROL_RANGE_MIN = -10.0
 CONTROL_RANGE_MAX = 10.0
+CONTROL_STEP = 0.1
 
-# Cart position input range for fuzzy controller (meters)
-# Set to exactly match termination boundaries (±2.4m)
-# No extension needed - positions beyond this trigger immediate failure
-CART_POSITION_RANGE_MIN = -2.4
-CART_POSITION_RANGE_MAX = 2.4
+CART_POSITION_RANGE_MIN = -3.0
+CART_POSITION_RANGE_MAX = 3.0
+CART_POSITION_STEP = 0.1
 
-# Cart velocity input range for fuzzy controller (m/s)
-# Narrower than physical max - typical velocities during control stay within ±1 m/s
-# Extended to ±3 to handle aggressive recovery maneuvers
-CART_VELOCITY_RANGE_MIN = -3.0
-CART_VELOCITY_RANGE_MAX = 3.0
+CART_VELOCITY_RANGE_MIN = -1.0
+CART_VELOCITY_RANGE_MAX = 1.0
+CART_VELOCITY_STEP = 0.1
 
-# =============================================================================
-# CONVERGENCE THRESHOLDS
-# =============================================================================
-# Define what constitutes a "balanced" or "stable" state.
-# Used for determining when the controller has achieved its goal.
-
-# Angle threshold for considering pole "vertical" (radians)
-# 0.02 rad = ~1.1 degrees - very tight tolerance
 CONVERGENCE_THRESHOLD_ANGLE = 0.02
-
-# Angular velocity threshold for considering pole "stationary" (rad/s)
-# Pole must be both near-vertical AND barely moving to be "converged"
 CONVERGENCE_THRESHOLD_ANGULAR_VEL = 0.1
 
-# =============================================================================
-# DISPLAY SETTINGS
-# =============================================================================
-# Control console output verbosity during simulation.
-
-# Print status every N steps during simulation
-# Lower values = more verbose output
-# Set to MAX_SIMULATION_STEPS to only print at end
 DISPLAY_INTERVAL = 50
+
+INIT_CART_POS_MIN = -0.3
+INIT_CART_POS_MAX = 0.3
+INIT_CART_VEL_MIN = -0.1
+INIT_CART_VEL_MAX = 0.1
+INIT_POLE_ANGLE_MIN = -0.03
+INIT_POLE_ANGLE_MAX = 0.03
+INIT_POLE_VEL_MIN = -0.1
+INIT_POLE_VEL_MAX = 0.1
+
+# Angle Membership Function Parameters (radians)
+ANGLE_NL = [-0.6, -0.6, -0.05, -0.015]
+ANGLE_NS = [-0.04, -0.015, -0.003]
+ANGLE_Z = [-0.006, 0.0, 0.006]
+ANGLE_PS = [0.003, 0.015, 0.04]
+ANGLE_PL = [0.015, 0.05, 0.6, 0.6]
+
+# Angular Velocity Membership Function Parameters (rad/s)
+ANG_VEL_N = [-3.0, -3.0, -0.2, -0.02]
+ANG_VEL_Z = [-0.08, 0.0, 0.08]
+ANG_VEL_P = [0.02, 0.2, 3.0, 3.0]
+
+# Cart Position Membership Function Parameters (meters)
+CART_POS_N = [-3.0, -3.0, -1.0, -0.5]
+CART_POS_Z = [-0.7, 0.0, 0.7]
+CART_POS_P = [0.5, 1.0, 3.0, 3.0]
+
+# Cart Velocity Membership Function Parameters (m/s)
+CART_VEL_N = [-1.0, -1.0, -0.3, -0.05]
+CART_VEL_Z = [-0.15, 0.0, 0.15]
+CART_VEL_P = [0.05, 0.3, 1.0, 1.0]
+
+# Force Output Membership Function Parameters (Newtons)
+FORCE_NL = [-10, -10, -7, -3]
+FORCE_NS = [-5, -2.5, 0]
+FORCE_Z = [-0.3, 0, 0.3]
+FORCE_PS = [0, 2.5, 5]
+FORCE_PL = [3, 7, 10, 10]
+
+# Integral Controller Parameters
+INTEGRAL_GAIN =     .0
+INTEGRAL_LIMIT = 6.0
+INTEGRAL_ANGLE_THRESHOLD = 0.1
+INTEGRAL_DECAY = 0.95
