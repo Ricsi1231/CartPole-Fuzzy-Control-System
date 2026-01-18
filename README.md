@@ -20,11 +20,12 @@ CartPole-Fuzzy-Control-System/
 ├── main.py                 # Main entry point and simulation loop
 ├── fuzzy_controller.py     # Fuzzy logic control system implementation
 ├── cartpole_env.py         # Custom continuous CartPole environment
-├── cartpole_parameters.py  # Configuration and parameter definitions
+├── cartpole_parameters.py  # Configuration and parameter definitions 
 ├── visualization.py        # Plotting and visualization functions
 ├── requirements.txt        # Python dependencies
 ├── setup.sh                # Linux virtual environment setup script
-└── run_simulation.sh       # Linux simulation execution script
+├── run_simulation.sh       # Linux simulation execution script
+└── README.md               # This file
 ```
 
 ## Requirements
@@ -187,27 +188,38 @@ The controller uses a Mamdani fuzzy inference system with:
 
 **Input Variables:**
 - Pole angle: [-1, 1] radians with 5 membership functions (NL, NS, Z, PS, PL)
+  - Symmetric design with overlap for smooth transitions
+  - Active region: approximately ±0.1 radians from vertical
 - Angular velocity: [-3, 3] rad/s with 3 membership functions (N, Z, P)
 - Cart position: [-3, 3] meters with 3 membership functions (N, Z, P)
 - Cart velocity: [-1, 1] m/s with 3 membership functions (N, Z, P)
+  - Symmetric design with proper overlap at transition points
 
 **Output Variable:**
 - Force: [-10, 10] Newtons with 5 membership functions (NL, NS, Z, PS, PL)
 
 **Control Rules:**
-- 18 rules for angle stabilization (based on pole angle and angular velocity)
-- 6 rules for drift correction (based on cart position and velocity)
+- 18 rules for pole balancing (based on pole angle and angular velocity)
+  - Large angles trigger aggressive corrective force
+  - Small angles use proportional response based on angular velocity
+- 6 rules for cart centering (based on cart position and velocity)
+  - Push cart back toward center when it drifts
 
 ### Integral Control
 
-An integral controller is included to eliminate steady-state position drift. It accumulates position error when the pole is nearly vertical and applies corrective force to center the cart.
+An integral controller is included to eliminate steady-state position drift. It accumulates position error when the pole is nearly vertical (below threshold) and applies corrective force to center the cart. Features include:
+- Anti-windup limiting to prevent excessive integral buildup
+- Automatic decay when pole becomes unstable (prioritizes balancing over centering)
 
 ## Visualization
 
 When `show_plots` is enabled, the following visualizations are generated:
 
-1. **Membership Functions** - Shows all fuzzy sets for input/output variables
+1. **Membership Functions** - Shows all 5 fuzzy variables with their membership functions
+   - Pole angle plot is zoomed to ±0.15 radians to show detail in the active region
+   - All plots include reference lines for clarity
 2. **Control Surface** - 3D plot of force output vs angle and angular velocity
+   - Shows the fuzzy controller response with cart at center position
 3. **Simulation Results** - Time-series plots of angle, velocity, position, and control actions
 4. **Episode Summary** - Bar chart comparing episode performance
 
