@@ -21,7 +21,7 @@ OBS_POLE_VEL = 3    # Index 3: Pole angular velocity (rad/s, positive = rotating
 # =============================================================================
 DT = 0.02                     # Time step in seconds (20ms) - used for integral control accumulation
 MAX_SIMULATION_STEPS = 1000   # Maximum steps per episode (1000 steps = 20 seconds at DT=0.02)
-NUM_EPISODES = 10             # Default number of episodes to run
+NUM_EPISODES = 1             # Default number of episodes to run
 
 # =============================================================================
 # ENVIRONMENT STATE LIMITS (from Gymnasium CartPole)

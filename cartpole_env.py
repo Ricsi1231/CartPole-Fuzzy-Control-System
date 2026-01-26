@@ -9,7 +9,6 @@ import numpy as np
 from gymnasium import spaces
 from gymnasium.envs.classic_control.cartpole import CartPoleEnv
 
-
 class CartPoleContinuousEnv(CartPoleEnv):
     """
     CartPole environment modified for continuous force control.

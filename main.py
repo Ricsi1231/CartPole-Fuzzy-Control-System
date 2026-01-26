@@ -56,7 +56,7 @@ def simulate_cartpole_fuzzy(controller, episode_num, render=True):
     random_pole_vel = np.random.uniform(INIT_POLE_VEL_MIN, INIT_POLE_VEL_MAX)
 
     # Apply randomized initial state to the environment
-    env.state = (random_cart_pos, random_cart_vel, random_pole_angle, random_pole_vel)
+    env.state = (-0.2, 0.1, 0.02, 0.1)
     observation = np.array(env.state, dtype=np.float32)
 
     # =========================================================================
@@ -181,26 +181,20 @@ def main():
     # Main Episode Loop
     # Runs continuously until user interrupts with Ctrl+C
     # =========================================================================
-    try:
-        while True:
-            episode += 1
-            print(f"\n{'=' * SEPARATOR_WIDTH}")
-            print(f"Episode {episode}")
-            print("=" * SEPARATOR_WIDTH)
+    print(f"\n{'=' * SEPARATOR_WIDTH}")
+    print(f"Episode {episode}")
+    print("=" * SEPARATOR_WIDTH)
 
             # Run single episode and collect results
-            time_steps, angles, angular_velocities, cart_positions, actions, rewards, total_reward, steps = simulate_cartpole_fuzzy(
+    time_steps, angles, angular_velocities, cart_positions, actions, rewards, total_reward, steps = simulate_cartpole_fuzzy(
                 controller, episode, render=True
             )
 
             # Store episode results for summary statistics
-            episode_rewards.append(total_reward)
-            episode_steps.append(steps)
+    episode_rewards.append(total_reward)
+    episode_steps.append(steps)
 
-            print(f"\nEpisode {episode} finished - Steps: {steps}, Reward: {total_reward}")
-
-    except KeyboardInterrupt:
-        print("\n\nSimulation stopped by user.")
+    print(f"\nEpisode {episode} finished - Steps: {steps}, Reward: {total_reward}")
 
     # =========================================================================
     # Final Summary Statistics

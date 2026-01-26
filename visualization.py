@@ -229,61 +229,130 @@ def plot_simulation_results(time_steps, angles, angular_velocities, cart_positio
 
 def plot_control_surface(controller):
     """
-    Plot 3D control surface showing force output as a function of angle and angular velocity.
+    Plot three 3D control surfaces:
+    1. Force vs Pole Angle and Angular Velocity (pole balancing)
+    2. Force vs Cart Position and Cart Velocity (cart centering)
+    3. Force vs Cart Position and Pole Angle (combined behavior)
 
     Args:
         controller: FuzzyCartPoleController instance
     """
     # =========================================================================
-    # Define Input Ranges for Surface Plot
-    # Cart position and velocity are held at zero (centered, stationary)
+    # Create Figure with Three Subplots (1 row, 3 columns)
     # =========================================================================
-    angle_range = np.linspace(-0.3, 0.3, 30)
-    angular_velocity_range = np.linspace(-2.0, 2.0, 30)
-    x, y = np.meshgrid(angle_range, angular_velocity_range)
-    z = np.zeros_like(x, dtype=float)
+    fig = plt.figure(figsize=(18, 6))
 
-    # =========================================================================
-    # Compute Force Output for Each Point
-    # Evaluate fuzzy system across the entire input space
-    # =========================================================================
+    # Create fuzzy simulation instance
     sim = ctrl.ControlSystemSimulation(controller.control_system)
 
-    for i in range(x.shape[0]):
-        for j in range(x.shape[1]):
-            # Set input values
-            sim.input['angle'] = x[i, j]
-            sim.input['angular_velocity'] = y[i, j]
-            sim.input['cart_position'] = 0.0  # Assume cart at center
-            sim.input['cart_velocity'] = 0.0  # Assume cart stationary
+    # =========================================================================
+    # Surface 1: Pole Angle vs Angular Velocity
+    # Shows the pole balancing behavior (cart held at center, stationary)
+    # =========================================================================
+    ax1 = fig.add_subplot(131, projection='3d')
 
-            # Compute fuzzy output
+    # Define input ranges for pole balancing surface
+    angle_range = np.linspace(-0.15, 0.15, 30)
+    angular_velocity_range = np.linspace(-1.0, 1.0, 30)
+    x1, y1 = np.meshgrid(angle_range, angular_velocity_range)
+    z1 = np.zeros_like(x1, dtype=float)
+
+    # Compute force output for each point
+    for i in range(x1.shape[0]):
+        for j in range(x1.shape[1]):
+            sim.input['angle'] = x1[i, j]
+            sim.input['angular_velocity'] = y1[i, j]
+            sim.input['cart_position'] = 0.0  # Cart at center
+            sim.input['cart_velocity'] = 0.0  # Cart stationary
             sim.compute()
+            z1[i, j] = sim.output['force']
 
-            # Store result
-            z[i, j] = sim.output['force']
+    # Plot surface
+    surf1 = ax1.plot_surface(x1, y1, z1, rstride=1, cstride=1, cmap='viridis',
+                             linewidth=0.4, antialiased=True)
+
+    ax1.set_xlabel('Pole Angle (rad)')
+    ax1.set_ylabel('Angular Vel (rad/s)')
+    ax1.set_zlabel('Force (N)')
+    ax1.set_title('Pole Balancing\n(cart centered)', fontweight='bold', fontsize=10)
+    ax1.view_init(30, 220)
+    fig.colorbar(surf1, ax=ax1, shrink=0.5, aspect=10)
 
     # =========================================================================
-    # Create 3D Surface Plot
+    # Surface 2: Cart Position vs Cart Velocity
+    # Shows the cart centering behavior (pole held vertical, stationary)
     # =========================================================================
-    fig = plt.figure(figsize=(10, 8))
-    ax = fig.add_subplot(111, projection='3d')
+    ax2 = fig.add_subplot(132, projection='3d')
 
-    # Plot surface with color mapping
-    surf = ax.plot_surface(x, y, z, rstride=1, cstride=1, cmap='viridis',
-                           linewidth=0.4, antialiased=True)
+    # Define input ranges for cart centering surface
+    position_range = np.linspace(-2.0, 2.0, 30)
+    velocity_range = np.linspace(-0.8, 0.8, 30)
+    x2, y2 = np.meshgrid(position_range, velocity_range)
+    z2 = np.zeros_like(x2, dtype=float)
 
-    # Labels and title
-    ax.set_xlabel('Pole Angle (radians)')
-    ax.set_ylabel('Angular Velocity (rad/s)')
-    ax.set_zlabel('Force (Control Signal)')
-    ax.set_title('Fuzzy Control Surface (cart at center, stationary)')
+    # Compute force output for each point
+    for i in range(x2.shape[0]):
+        for j in range(x2.shape[1]):
+            sim.input['angle'] = 0.0  # Pole vertical
+            sim.input['angular_velocity'] = 0.0  # Pole stationary
+            sim.input['cart_position'] = x2[i, j]
+            sim.input['cart_velocity'] = y2[i, j]
+            sim.compute()
+            z2[i, j] = sim.output['force']
 
-    # Set viewing angle for better visualization
-    ax.view_init(30, 200)
+    # Plot surface
+    surf2 = ax2.plot_surface(x2, y2, z2, rstride=1, cstride=1, cmap='plasma',
+                             linewidth=0.4, antialiased=True)
 
-    # Add color bar to show force magnitude
-    fig.colorbar(surf)
+    ax2.set_xlabel('Cart Position (m)')
+    ax2.set_ylabel('Cart Velocity (m/s)')
+    ax2.set_zlabel('Force (N)')
+    ax2.set_title('Cart Centering\n(pole vertical)', fontweight='bold', fontsize=10)
+    ax2.view_init(30, 220)
+    fig.colorbar(surf2, ax=ax2, shrink=0.5, aspect=10)
+
+    # =========================================================================
+    # Surface 3: Cart Position vs Pole Angle
+    # Shows combined behavior (velocities held at zero)
+    # =========================================================================
+    ax3 = fig.add_subplot(133, projection='3d')
+
+    # Define input ranges for combined surface
+    position_range_3 = np.linspace(-2.0, 2.0, 30)
+    angle_range_3 = np.linspace(-0.15, 0.15, 30)
+    x3, y3 = np.meshgrid(position_range_3, angle_range_3)
+    z3 = np.zeros_like(x3, dtype=float)
+
+    # Compute force output for each point
+    for i in range(x3.shape[0]):
+        for j in range(x3.shape[1]):
+            sim.input['angle'] = y3[i, j]  # Pole angle on Y-axis
+            sim.input['angular_velocity'] = 0.0  # Pole stationary
+            sim.input['cart_position'] = x3[i, j]  # Cart position on X-axis
+            sim.input['cart_velocity'] = 0.0  # Cart stationary
+            sim.compute()
+            z3[i, j] = sim.output['force']
+
+    # Plot surface
+    surf3 = ax3.plot_surface(x3, y3, z3, rstride=1, cstride=1, cmap='coolwarm',
+                             linewidth=0.4, antialiased=True)
+
+    ax3.set_xlabel('Cart Position (m)')
+    ax3.set_ylabel('Pole Angle (rad)')
+    ax3.set_zlabel('Force (N)')
+    ax3.set_title('Position vs Angle\n(velocities zero)', fontweight='bold', fontsize=10)
+    ax3.view_init(30, 220)
+    fig.colorbar(surf3, ax=ax3, shrink=0.5, aspect=10)
+
+    # =========================================================================
+    # Final Layout
+    # =========================================================================
+    fig.suptitle('Fuzzy Controller Control Surfaces', fontsize=14, fontweight='bold')
+    plt.tight_layout(rect=[0, 0, 1, 0.93])
+
+    # Save to file
+    plt.savefig('control_surfaces.png', dpi=150, bbox_inches='tight')
+    print("Saved control surfaces to: control_surfaces.png")
 
     plt.show()
 
